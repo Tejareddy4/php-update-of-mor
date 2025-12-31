@@ -2,36 +2,41 @@
 
 namespace Elementor;
 
-if (!defined('ABSPATH')) exit; // Exit if accessed directly
+use Elementor\Controls_Manager;
+use Elementor\Repeater;
+use Elementor\Utils;
+
+if (!defined('ABSPATH')) exit;
 
 class Moroil_Tabs_Widget extends Widget_Base {
 
-
-	public function get_name () {
+	public function get_name(): string {
 		return 'moroil_tabs';
 	}
 
-	public function get_title () {
+	public function get_title(): string {
 		return __('Tabs', 'oceanwp');
 	}
 
-	public function get_icon () {
+	public function get_icon(): string {
 		return 'icon-moroilAdmin-logo';
 	}
 
-	public function get_categories () {
+	public function get_categories(): array {
 		return ['moroil'];
 	}
 
-	public function get_keywords () {
+	public function get_keywords(): array {
 		return ['tabs', 'moroil'];
 	}
 
-	public function get_script_depends () {
+	public function get_script_depends(): array {
 		return ['smartmenus'];
 	}
 
-	protected function _register_controls () {
+	/* REQUIRED FIX */
+	protected function register_controls(): void {
+
 		$this->start_controls_section(
 			'content',
 			[
@@ -39,12 +44,13 @@ class Moroil_Tabs_Widget extends Widget_Base {
 			]
 		);
 
-		$repeater = new \Elementor\Repeater();
+		$repeater = new Repeater();
 
 		$repeater->add_control(
-			'list_name', [
+			'list_name',
+			[
 				'label' => __('Name', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::TEXT,
+				'type' => Controls_Manager::TEXT,
 				'default' => __('Wholesale', 'oceanwp'),
 				'label_block' => true,
 			]
@@ -73,17 +79,18 @@ class Moroil_Tabs_Widget extends Widget_Base {
 			'list_image',
 			[
 				'label' => __('Choose image', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::MEDIA,
+				'type' => Controls_Manager::MEDIA,
 				'default' => [
-					'url' => \Elementor\Utils::get_placeholder_image_src(),
+					'url' => Utils::get_placeholder_image_src(),
 				],
 			]
 		);
 
 		$repeater->add_control(
-			'list_content', [
+			'list_content',
+			[
 				'label' => __('Content', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::WYSIWYG,
+				'type' => Controls_Manager::WYSIWYG,
 				'default' => __('Lorem ipsum dolor sit amet, consectetur adipiscing elit', 'oceanwp'),
 				'show_label' => false,
 			]
@@ -93,7 +100,7 @@ class Moroil_Tabs_Widget extends Widget_Base {
 			'list',
 			[
 				'label' => __('Tabs', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::REPEATER,
+				'type' => Controls_Manager::REPEATER,
 				'fields' => $repeater->get_controls(),
 				'default' => [
 					[
@@ -112,47 +119,63 @@ class Moroil_Tabs_Widget extends Widget_Base {
 		$this->end_controls_section();
 	}
 
-	protected function render () {
+	protected function render(): void {
+
 		$settings = $this->get_active_settings();
+		$tabs = $settings['list'] ?? [];
+
+		if (empty($tabs)) {
+			return;
+		}
 		?>
-		<?php if (!empty($settings['list'])):?>
-            <div class="elementor-section elementor-section-boxed">
-                <div class="elementor-container">
-                    <div class="lInner">
-                        <div class="lTabs">
-							<?php foreach ($settings['list'] as $index => $item): ?>
-                                <div>
-                                    <button class="<?php if ($index === 0): ?>active<?php endif; ?>"
-                                            data-tab-index="<?php echo $index; ?>">
-										<?php echo $item['list_name']; ?>
-                                    </button>
-                                    <div class="lTab">
-                                        <img src="<?php echo $item['list_image']['url']; ?>"
-                                             alt="<?php echo $item['list_image']['alt']; ?>">
-                                        <div class="lContent">
-											<?php echo $item['list_content']; ?>
-                                        </div>
-                                    </div>
-                                </div>
-							<?php endforeach; ?>
-                        </div>
-                        <div class="lContainer">
-							<?php foreach ($settings['list'] as $index => $item): ?>
-                                <div
-                                    class="lTab <?php if ($index === 0): ?> active <?php endif; ?><?php echo $item['list_align']; ?>"
-                                    data-tab-index="<?php echo $index; ?>">
-                                    <img src="<?php echo $item['list_image']['url']; ?>"
-                                         alt="<?php echo $item['list_image']['alt']; ?>">
-                                    <div class="lContent">
-										<?php echo $item['list_content']; ?>
-                                    </div>
-                                </div>
-							<?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-		<?php endif; ?>
+
+		<div class="elementor-section elementor-section-boxed">
+			<div class="elementor-container">
+				<div class="lInner">
+
+					<div class="lTabs">
+						<?php foreach ($tabs as $index => $item): ?>
+							<div>
+								<button class="<?php echo ($index === 0) ? 'active' : ''; ?>"
+										data-tab-index="<?php echo esc_attr($index); ?>">
+									<?php echo esc_html($item['list_name'] ?? ''); ?>
+								</button>
+
+								<div class="lTab">
+									<?php if (!empty($item['list_image']['url'])): ?>
+										<img src="<?php echo esc_url($item['list_image']['url']); ?>"
+											 alt="<?php echo esc_attr($item['list_image']['alt'] ?? ''); ?>">
+									<?php endif; ?>
+
+									<div class="lContent">
+										<?php echo wp_kses_post($item['list_content'] ?? ''); ?>
+									</div>
+								</div>
+							</div>
+						<?php endforeach; ?>
+					</div>
+
+					<div class="lContainer">
+						<?php foreach ($tabs as $index => $item): ?>
+							<div class="lTab <?php echo ($index === 0 ? 'active ' : '') . esc_attr($item['list_align'] ?? ''); ?>"
+								 data-tab-index="<?php echo esc_attr($index); ?>">
+
+								<?php if (!empty($item['list_image']['url'])): ?>
+									<img src="<?php echo esc_url($item['list_image']['url']); ?>"
+										 alt="<?php echo esc_attr($item['list_image']['alt'] ?? ''); ?>">
+								<?php endif; ?>
+
+								<div class="lContent">
+									<?php echo wp_kses_post($item['list_content'] ?? ''); ?>
+								</div>
+							</div>
+						<?php endforeach; ?>
+					</div>
+
+				</div>
+			</div>
+		</div>
+
 		<?php
 	}
 }
