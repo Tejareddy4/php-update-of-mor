@@ -3,42 +3,45 @@
 namespace Elementor;
 
 use Elementor\Core\Kits\Documents\Tabs\Global_Colors;
+use Elementor\Controls_Manager;
 
 if (!defined('ABSPATH')) exit; // Exit if accessed directly
 
 class Moroil_callToAction_Widget extends Widget_Base {
 
-	protected $nav_menu_index = 1;
+	protected int $nav_menu_index = 1;
 
-	public function get_name () {
+	public function get_name(): string {
 		return 'moroil_callToAction';
 	}
 
-	public function get_title () {
+	public function get_title(): string {
 		return __('Call to Action', 'oceanwp');
 	}
 
-	public function get_icon () {
+	public function get_icon(): string {
 		return 'icon-moroilAdmin-logo';
 	}
 
-	public function get_categories () {
+	public function get_categories(): array {
 		return ['moroil'];
 	}
 
-	public function get_keywords () {
+	public function get_keywords(): array {
 		return ['call', 'action', 'moroil'];
 	}
 
-	public function get_script_depends () {
+	public function get_script_depends(): array {
 		return ['smartmenus'];
 	}
 
-	protected function get_class () {
+	protected function get_class(): string {
 		return 'el' . ucfirst($this->get_name());
 	}
 
-	protected function _register_controls () {
+	/* ✅ REQUIRED FIX */
+	protected function register_controls(): void {
+
 		$this->start_controls_section(
 			'content',
 			[
@@ -50,7 +53,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 			'title',
 			[
 				'label' => __('Title', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::TEXT,
+				'type' => Controls_Manager::TEXT,
 				'default' => __('Title', 'oceanwp'),
 				'placeholder' => __('Type your title here', 'oceanwp'),
 			]
@@ -60,7 +63,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 			'description',
 			[
 				'label' => __('Description', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::TEXTAREA,
+				'type' => Controls_Manager::TEXTAREA,
 				'rows' => 10,
 				'default' => __('Default description', 'oceanwp'),
 				'placeholder' => __('Type your description here', 'oceanwp'),
@@ -71,7 +74,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 			'button_text',
 			[
 				'label' => __('Button text', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::TEXT,
+				'type' => Controls_Manager::TEXT,
 				'default' => __('Read more', 'oceanwp'),
 				'placeholder' => __('Type your button text', 'oceanwp'),
 			]
@@ -81,7 +84,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 			'button_url',
 			[
 				'label' => __('Button url', 'oceanwp'),
-				'type' => \Elementor\Controls_Manager::URL,
+				'type' => Controls_Manager::URL,
 			]
 		);
 
@@ -121,9 +124,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 			]
 		);
 
-		$this->start_controls_tabs(
-			'style_tabs'
-		);
+		$this->start_controls_tabs('style_tabs');
 
 		$this->start_controls_tab(
 			'style_normal_tab',
@@ -139,11 +140,11 @@ class Moroil_callToAction_Widget extends Widget_Base {
 				'type' => Controls_Manager::COLOR,
 				'default' => '#ffffff',
 				'selectors' => [
-					'{{WRAPPER}} .lContent, 
+					'{{WRAPPER}} .lContent,
 					{{WRAPPER}} .lContent h2,
 					{{WRAPPER}} .lContent a' => 'color: {{VALUE}};',
 					'{{WRAPPER}} .lContent hr' => 'background-color: {{VALUE}};',
-					'{{WRAPPER}} .lContent a' => 'border-color: {{VALUE}};'
+					'{{WRAPPER}} .lContent a' => 'border-color: {{VALUE}};',
 				],
 				'global' => [
 					'default' => Global_Colors::COLOR_PRIMARY,
@@ -158,7 +159,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 				'type' => Controls_Manager::COLOR,
 				'default' => 'rgba(0,0,0,0.7)',
 				'selectors' => [
-					'{{WRAPPER}} .lContent' => 'background-color: {{VALUE}};'
+					'{{WRAPPER}} .lContent' => 'background-color: {{VALUE}};',
 				],
 				'global' => [
 					'default' => Global_Colors::COLOR_PRIMARY,
@@ -197,7 +198,7 @@ class Moroil_callToAction_Widget extends Widget_Base {
 				'type' => Controls_Manager::COLOR,
 				'default' => 'rgba(255,255,255,1)',
 				'selectors' => [
-					'{{WRAPPER}} .lContent a:hover' => 'background-color: {{VALUE}}; border-color: {{VALUE}};'
+					'{{WRAPPER}} .lContent a:hover' => 'background-color: {{VALUE}}; border-color: {{VALUE}};',
 				],
 				'global' => [
 					'default' => Global_Colors::COLOR_PRIMARY,
@@ -205,34 +206,42 @@ class Moroil_callToAction_Widget extends Widget_Base {
 			]
 		);
 
-
 		$this->end_controls_section();
 	}
 
-	protected function render () {
+	protected function render(): void {
+
 		$settings = $this->get_active_settings();
+
+		$title = $settings['title'] ?? '';
+		$description = $settings['description'] ?? '';
+		$button_text = $settings['button_text'] ?? '';
+		$button_url = $settings['button_url']['url'] ?? '';
+		$is_external = !empty($settings['button_url']['is_external']);
+		$nofollow = !empty($settings['button_url']['nofollow']);
 		?>
-        <div class="elementor-section elementor-section-boxed">
-            <div class="elementor-container">
-                <div class="lInner">
-                    <div class="lContent">
-                        <h2><?php echo $settings['title']; ?></h2>
-                        <hr>
-                        <p><?php echo $settings['description']; ?></p>
-						<?php if (!empty($settings['button_text'])):
-							$target = $settings['button_url']['is_external'] ? ' target="_blank"' : '';
-							$nofollow = $settings['button_url']['nofollow'] ? ' rel="nofollow"' : '';
-							echo '<a href="' . $settings['button_url']['url'] . '"' . $target . $nofollow . '>' . $settings['button_text'] . '</a>';
-						endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="elementor-section elementor-section-boxed">
+			<div class="elementor-container">
+				<div class="lInner">
+					<div class="lContent">
+						<h2><?php echo esc_html($title); ?></h2>
+						<hr>
+						<p><?php echo esc_html($description); ?></p>
+
+						<?php if ($button_text && $button_url): ?>
+							<a href="<?php echo esc_url($button_url); ?>"
+							   <?php echo $is_external ? 'target="_blank"' : ''; ?>
+							   <?php echo $nofollow ? 'rel="nofollow"' : ''; ?>>
+								<?php echo esc_html($button_text); ?>
+							</a>
+						<?php endif; ?>
+
+					</div>
+				</div>
+			</div>
+		</div>
 		<?php
 	}
 
-	protected function _content_template () {
-
-	}
-
+	protected function content_template(): void {}
 }
