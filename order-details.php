@@ -1,12 +1,13 @@
 <?php
 global $woocommerce;
 
+// Kept original variable names and property access
 $count = isset($woocommerce->cart) ? round((float) $woocommerce->cart->cart_contents_count, 2) : 0;
 $currency = get_woocommerce_currency_symbol();
 $selected = '';
 ?>
 
-<form class="lOrder" data-checkout="<?php echo wc_get_checkout_url(); ?>">
+<form class="lOrder" data-checkout="<?php echo esc_url( wc_get_checkout_url() ); ?>">
     <div class="lColumn">
         <p>Oil Type</p>
         <?php if (have_rows('products', 'option')): $counter = 0; ?>
@@ -14,6 +15,8 @@ $selected = '';
                 <?php
                 $product_id = get_sub_field('product');
                 $product = $product_id ? wc_get_product($product_id) : null;
+                
+                // Safety check: ensure product exists before calling cart methods
                 if (!$product) continue;
 
                 $product_cart_id = $woocommerce->cart->generate_cart_id($product->get_id());
@@ -36,7 +39,6 @@ $selected = '';
     <div class="lColumn">
         <p>Order amount</p>
 
-        <!-- Quantity -->
         <label class="inputRadioSelect">
             <div class="lLabel">
                 <input type="radio" name="product_amount" value="Quantity" checked required>
@@ -66,10 +68,9 @@ $selected = '';
                                     if (!$p || $p <= 0) continue;
 
                                     $price = $p * $qty;
-
                                     $taxes = \WC_Tax::get_rates($product->get_tax_class());
                                     $rate = 0;
-                                    if (!empty($taxes)) {
+                                    if (!empty($taxes) && is_array($taxes)) {
                                         $tax = array_shift($taxes);
                                         $rate = isset($tax['rate']) ? (float) $tax['rate'] : 0;
                                     }
@@ -78,13 +79,11 @@ $selected = '';
                                         $price += ($price / 100) * $rate;
                                     }
 
-                                    if ($price <= 0) continue;
-
                                     $result = discount_calculator($product, $qty, $price);
                                     ?>
                                     <option
-                                        data-sale="<?php echo esc_attr(round($result['sale_price'] ?? 0, 2)); ?>"
-                                        data-price="<?php echo esc_attr(round($result['regular_price'] ?? 0, 2)); ?>"
+                                        data-sale="<?php echo esc_attr(round((float)($result['sale_price'] ?? 0), 2)); ?>"
+                                        data-price="<?php echo esc_attr(round((float)($result['regular_price'] ?? 0), 2)); ?>"
                                         value="<?php echo esc_attr($qty); ?>"
                                         <?php if ($count === round($qty, 2)): ?>selected data-active-amount="1"<?php endif; ?>
                                     >
@@ -98,7 +97,6 @@ $selected = '';
             <?php endif; ?>
         </label>
 
-        <!-- Price -->
         <label>
             <div class="lLabel">
                 <input type="radio" name="product_amount" value="Price" required>
@@ -122,30 +120,24 @@ $selected = '';
                                     $select_price = (float) get_sub_field('price');
                                     if ($select_price <= 0) continue;
 
-                                    $price = $select_price;
-
                                     $taxes = \WC_Tax::get_rates($product->get_tax_class());
                                     $rate = 0;
-                                    if (!empty($taxes)) {
+                                    if (!empty($taxes) && is_array($taxes)) {
                                         $tax = array_shift($taxes);
                                         $rate = isset($tax['rate']) ? (float) $tax['rate'] : 0;
                                     }
 
-                                    if ($rate > 0) {
-                                        $price = (100 * $price) / ($rate + 100);
-                                    }
+                                    $price = ($rate > 0) ? (100 * $select_price) / ($rate + 100) : $select_price;
 
                                     $p = get_tiered_price($product, $price, true);
                                     if (!$p || $p <= 0) continue;
 
                                     $qty = $price / $p;
-                                    if ($qty <= 0) continue;
-
                                     $result = discount_calculator($product, $qty, $select_price);
                                     ?>
                                     <option
-                                        data-sale="<?php echo esc_attr(round($result['discount'] ?? 0, 2)); ?>"
-                                        data-price="<?php echo esc_attr(round($result['regular_price'] ?? 0, 2)); ?>"
+                                        data-sale="<?php echo esc_attr(round((float)($result['discount'] ?? 0), 2)); ?>"
+                                        data-price="<?php echo esc_attr(round((float)($result['regular_price'] ?? 0), 2)); ?>"
                                         value="<?php echo esc_attr(round($qty, 2)); ?>"
                                         <?php if ($count === round($qty, 2)): ?>selected data-active-amount="1"<?php endif; ?>
                                     >
@@ -161,7 +153,7 @@ $selected = '';
     </div>
 
     <div class="lAction">
-        <button class="next"><?php _e('next', 'oceanwp'); ?></button>
+        <button class="next"><?php esc_html_e('next', 'oceanwp'); ?></button>
         <span class="lLoading">
             <img src="<?php echo esc_url(get_admin_url() . 'images/loading.gif'); ?>" alt="loading">
         </span>
@@ -169,11 +161,8 @@ $selected = '';
     </div>
 
     <p class="lNote">
-        <?php _e(
-            'Note: Our deliveries will only pump what your tank will safely take. 
-            If different than ordered amount, we will only charge for delivered amount. 
-            Unit price may vary if delivered amount is less than ordered amount. 
-            Amounts delivered will be rounded to the nearest litre. All deliveries are metered.',
+        <?php esc_html_e(
+            'Note: Our deliveries will only pump what your tank will safely take. If different than ordered amount, we will only charge for delivered amount. Unit price may vary if delivered amount is less than ordered amount. Amounts delivered will be rounded to the nearest litre. All deliveries are metered.',
             'oceanwp'
         ); ?>
     </p>
